@@ -37,7 +37,7 @@ function loadStyle(id: DrawnStyleId): Promise<Style> {
   return pending
 }
 
-/** Genera el avatar. Es determinista: un mismo usuario siempre se ve igual dentro de un estilo. */
+/** Genera el avatar. Es determinista: una misma seed siempre se ve igual dentro de un estilo. */
 export async function renderAvatar(id: DrawnStyleId, seed: string): Promise<string> {
   const key = `${id}:${seed}`
   const cached = images.get(key)
@@ -51,14 +51,14 @@ export async function renderAvatar(id: DrawnStyleId, seed: string): Promise<stri
 /** Devuelve la imagen, o null con 'initials', mientras carga o si falla: entonces se ven las iniciales. */
 export function useAvatarImage(style: AvatarStyleId, seed: string): string | null {
   const key = `${style}:${seed}`
-  const [loaded, setLoaded] = useState<{ key: string; uri: string } | null>(null)
+  const [loaded, setLoaded] = useState<{ style: AvatarStyleId; uri: string } | null>(null)
 
   useEffect(() => {
     if (style === 'initials' || images.has(key)) return
     let alive = true
     renderAvatar(style, seed)
       .then((uri) => {
-        if (alive) setLoaded({ key, uri })
+        if (alive) setLoaded({ style, uri })
       })
       .catch(() => {
         /* sin red para el chunk: se mantienen las iniciales */
@@ -69,5 +69,6 @@ export function useAvatarImage(style: AvatarStyleId, seed: string): string | nul
   }, [style, seed, key])
 
   if (style === 'initials') return null
-  return images.get(key) ?? (loaded?.key === key ? loaded.uri : null)
+  // Al cambiar la seed se mantiene la imagen anterior hasta tener la nueva: evita parpadeos al escribir.
+  return images.get(key) ?? (loaded?.style === style ? loaded.uri : null)
 }

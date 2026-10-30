@@ -3,6 +3,7 @@ import { ArrowRight, UserRound } from 'lucide-react'
 import { LIMITS } from '@/domain/types'
 import { sanitizeName } from '@/store/identity'
 import { Button, Input, Modal } from '@/ui/primitives'
+import { AvatarPreview } from './AvatarPreview'
 
 export interface NameGateProps {
   open: boolean
@@ -79,7 +80,8 @@ function NameForm({ id, initialName, onConfirm }: NameFormProps) {
   }
 
   return (
-    <form id={id} onSubmit={submit} noValidate>
+    <form id={id} onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <AvatarPreview name={draft} hint="El estilo lo elige la mesa" />
       <Input
         ref={inputRef}
         label="Tu nombre"

@@ -26,7 +26,7 @@ const sizes = {
 export function Avatar({ id, name, size = 'md', dimmed, className, styleId, decorative }: AvatarProps) {
   const c = avatarColor(id)
   const tableStyle = useTableStore((s) => s.snapshot?.state?.avatarStyle)
-  const image = useAvatarImage(styleId ?? resolveAvatarStyle(tableStyle), id)
+  const image = useAvatarImage(styleId ?? resolveAvatarStyle(tableStyle), name)
   return (
     <span
       role={decorative ? undefined : 'img'}

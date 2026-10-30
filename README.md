@@ -19,7 +19,8 @@ de quien la crea y el resto del equipo se conecta con un enlace o con el código
 - **Nombres editables**: cada participante elige y edita su nombre.
 - **Chat** de la mesa, **reacciones** con emojis que aparecen sobre cada participante,
   **sonidos** sintetizados para cada acción y **animaciones** suaves con framer-motion.
-- **Avatares**: los admins eligen entre 13 estilos, y toda la mesa los ve igual.
+- **Avatares**: se generan a partir del nombre y se ven al escribirlo, antes de entrar. Los admins eligen
+  entre 13 estilos, y toda la mesa los ve igual.
 - Iconos ligeros de [lucide](https://lucide.dev).
 
 ## Créditos de avatares

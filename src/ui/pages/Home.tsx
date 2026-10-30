@@ -1,3 +1,4 @@
+import { AvatarPreview } from '@/ui/components/shell/AvatarPreview'
 import { useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
@@ -187,6 +188,7 @@ export function Home() {
                   title="Crear mesa"
                   description="Tú alojas la mesa: vive en tu navegador y controlas las rondas."
                 />
+                <AvatarPreview name={createName} hint="Así te verá tu equipo" />
                 <Input
                   ref={createNameRef}
                   label="Tu nombre"
@@ -238,6 +240,7 @@ export function Home() {
                   title="Unirse a una mesa"
                   description="Pide el código o el enlace a quien creó la mesa."
                 />
+                <AvatarPreview name={joinName} hint="El estilo lo elige la mesa" />
                 <Input
                   ref={joinNameRef}
                   label="Tu nombre"
