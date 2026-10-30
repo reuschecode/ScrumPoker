@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Tokens de diseño — tema oscuro elegante, acento índigo + menta.
+   Úsalos como clases Tailwind: bg-bg, bg-surface, text-ink, text-ink-2,
+   border-line, text-accent, bg-accent, text-danger, rounded-xl, shadow-card…
+   --------------------------------------------------------------------------- */
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Fondos (de más profundo a más elevado) */
+  --color-bg: #0b1020;
+  --color-bg-elev: #111831;
+  --color-surface: #182040;
+  --color-surface-2: #1f2a52;
+  --color-surface-3: #27335f;
+
+  /* Líneas y texto */
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.16);
+  --color-ink: #e8ecf8;
+  --color-ink-2: #a9b2d0;
+  --color-ink-3: #8a94b8; /* 4.5:1 o más sobre bg…surface-2 */
+
+  /* Acentos semánticos */
+  --color-accent: #7c8cff;
+  --color-accent-strong: #5f70ff;
+  --color-accent-soft: rgba(124, 140, 255, 0.16);
+  --color-mint: #5ee1c1;
+  --color-mint-soft: rgba(94, 225, 193, 0.16);
+  --color-warn: #ffb45e;
+  --color-warn-soft: rgba(255, 180, 94, 0.16);
+  --color-danger: #ff6b8a;
+  --color-danger-soft: rgba(255, 107, 138, 0.16);
+
+  /* Mesa (fieltro) */
+  --color-felt: #15382d;
+  --color-felt-edge: #0e271f;
+
+  /* Cartas */
+  --color-card-face: #f6f7fb;
+  --color-card-ink: #1b2140;
+  --color-card-back: #2a3a80;
+  --color-card-back-2: #1b2660;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 0 1px rgba(124, 140, 255, 0.35), 0 0 24px rgba(124, 140, 255, 0.25);
+  --shadow-panel: 0 20px 60px -20px rgba(0, 0, 0, 0.7);
+
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background-color: var(--color-bg);
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, rgba(124, 140, 255, 0.14), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(94, 225, 193, 0.10), transparent 55%);
+    background-attachment: fixed;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    overscroll-behavior-y: none;
+  }
+  ::selection {
+    background: rgba(124, 140, 255, 0.35);
+  }
+  button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+  /* Scrollbars finos */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 999px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+}
+
+@layer utilities {
+  /* Superficie "vidrio" para paneles flotantes */
+  .glass {
+    background: color-mix(in srgb, var(--color-bg-elev) 82%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid var(--color-line);
+  }
+  .text-gradient {
+    background: linear-gradient(90deg, var(--color-accent), var(--color-mint));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Soporte 3D para el volteo de cartas */
+  .preserve-3d { transform-style: preserve-3d; }
+  .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .perspective { perspective: 1000px; }
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
