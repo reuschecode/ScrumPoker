@@ -171,6 +171,11 @@ export function TablePage() {
     void joinTable(code)
   }
 
+  // Con pocos píxeles de alto, los resultados quedan bajo la mesa: se llevan a la vista al revelar.
+  const scrollResultsIntoView = useCallback((el: HTMLDivElement | null) => {
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [])
+
   if (!valid) return <Navigate to="/" replace />
 
   const revealed = state?.round.revealed ?? false
@@ -192,27 +197,36 @@ export function TablePage() {
         <div className="relative flex min-w-0 flex-1 flex-col">
           <ReconnectBanner visible={status === 'reconnecting' && !leaving} />
           <main
-            className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
+            className="flex min-h-0 flex-1 flex-col"
             aria-busy={status === 'connecting'}
             inert={blocked}
           >
             {state && (
-              <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-4 sm:px-6">
-                <StoryBar />
-                <div className="flex min-h-[320px] flex-1 flex-col sm:min-h-[380px]">
-                  <PokerTable />
-                </div>
+              <>
+                {/* Solo esta zona hace scroll: las cartas y las reacciones quedan siempre a la vista. */}
+                <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+                  <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:px-6">
+                    <StoryBar />
+                    <div className="flex flex-1 flex-col justify-center">
+                      <PokerTable />
+                    </div>
                 <AnimatePresence initial={false}>
                   {revealed && (
                     // ResultsPanel ya anima su propia entrada (fade + y); el wrapper solo aporta la salida.
-                    <motion.div key="results" exit={{ opacity: 0, y: reduce ? 0 : 8, transition: { duration: 0.18 } }}>
+                    <motion.div key="results" ref={scrollResultsIntoView} exit={{ opacity: 0, y: reduce ? 0 : 8, transition: { duration: 0.18 } }}>
                       <ResultsPanel />
                     </motion.div>
                   )}
                 </AnimatePresence>
-                <VotingDeck />
-                <ReactionBar />
-              </div>
+                  </div>
+                </div>
+                <div className="shrink-0 border-t border-line bg-bg-elev/60 pb-2 pt-1">
+                  <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+                    {!revealed && <VotingDeck />}
+                    <ReactionBar />
+                  </div>
+                </div>
+              </>
             )}
           </main>
           <StatusOverlay

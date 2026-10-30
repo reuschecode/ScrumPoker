@@ -13,7 +13,7 @@ import { plural } from './format'
 
 /** Radios de la elipse de asientos (% del contenedor): los asientos pisan el borde del fieltro. */
 const RX = 40
-const RY = 31
+const RY = 29
 /** Con más asientos la elipse los solapa: se pasa a la cuadrícula. */
 const MAX_OVAL_SEATS = 10
 /** Escalonado del volteo al revelar (s por asiento). */
@@ -69,7 +69,7 @@ export function PokerTable() {
   }
 
   return (
-    <div className="relative mx-auto aspect-[16/10] max-h-[620px] min-h-[420px] w-full max-w-5xl">
+    <div className="relative mx-auto min-h-[390px] w-full max-w-5xl flex-1 sm:max-h-[640px]">
       <Felt>{center}</Felt>
       <div role="list" aria-label="Participantes" className="pointer-events-none absolute inset-0">
         <AnimatePresence initial={false}>{seats}</AnimatePresence>
