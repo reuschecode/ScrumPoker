@@ -13,6 +13,8 @@
  *  - Los comandos de sistema (`SystemCommand`) solo los genera el host.
  */
 
+import type { AvatarStyleId } from '@/domain/avatars'
+
 export type UserId = string
 
 // ---------------------------------------------------------------------------
@@ -146,6 +148,8 @@ export interface TableState {
   hostId: UserId
   admins: UserId[]
   deck: DeckId
+  /** Ausente en mesas guardadas por versiones anteriores: usar resolveAvatarStyle. */
+  avatarStyle?: AvatarStyleId
   participants: Participant[]
   round: Round
   history: HistoryEntry[]
@@ -166,6 +170,7 @@ export type Command =
   | { type: 'SET_NAME'; name: string }
   | { type: 'SET_TABLE_NAME'; name: string } // admin
   | { type: 'SET_DECK'; deck: DeckId } // admin; solo si la ronda actual no tiene votos
+  | { type: 'SET_AVATAR_STYLE'; style: AvatarStyleId } // admin
   | { type: 'SET_STORY'; story: string } // admin
   | { type: 'VOTE'; value: string } // carta del mazo actual; no permitido tras revelar
   | { type: 'CLEAR_VOTE' } // no permitido tras revelar
@@ -203,6 +208,7 @@ export type DomainEvent =
   | { type: 'table.renamed'; name: string; by: UserId }
   | { type: 'table.closed'; by: UserId }
   | { type: 'deck.changed'; deck: DeckId; by: UserId }
+  | { type: 'avatarStyle.changed'; style: AvatarStyleId; by: UserId }
   | { type: 'story.changed'; story: string; by: UserId }
   | { type: 'vote.cast'; userId: UserId; changed: boolean } // el valor nunca viaja en el evento
   | { type: 'vote.cleared'; userId: UserId }
@@ -228,6 +234,7 @@ export type DomainErrorCode =
   | 'invalid-name'
   | 'invalid-text'
   | 'invalid-deck'
+  | 'invalid-avatar-style'
   | 'empty'
   | 'already-revealed'
   | 'not-revealed'

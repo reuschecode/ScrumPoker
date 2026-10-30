@@ -56,6 +56,9 @@ function showEventToast(ev: DomainEvent, state: TableState, me: UserId | undefin
     case 'table.renamed':
       if (ev.by !== me) toast.show(`Mesa renombrada: ${ev.name}`, { emoji: '✏️' })
       return
+    case 'avatarStyle.changed':
+      if (ev.by !== me) toast.show(`${nameOf(state, ev.by, 'Un admin')} cambió los avatares`, { emoji: '🎭' })
+      return
     case 'round.finished':
       toast.show(`Ronda ${ev.entry.number} guardada: ${pointsLabel(ev.entry.finalScore)}`, {
         tone: 'mint',

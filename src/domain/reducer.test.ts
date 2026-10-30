@@ -1,3 +1,4 @@
+import { DEFAULT_AVATAR_STYLE } from '@/domain/avatars'
 import { describe, expect, it } from 'vitest'
 import {
   DECKS,
@@ -317,6 +318,26 @@ describe('DISCONNECT', () => {
     isNoop(table(), { type: 'DISCONNECT', userId: 'nadie', at: NOW })
     const away = ok(table(), { type: 'DISCONNECT', userId: U1, at: NOW })
     isNoop(away, { type: 'DISCONNECT', userId: U1, at: NOW })
+  })
+})
+
+describe('SET_AVATAR_STYLE', () => {
+  it('un admin cambia el estilo y se emite el evento', () => {
+    const { state, events } = okWithEvents(table(), user({ type: 'SET_AVATAR_STYLE', style: 'pixel-art' }, HOST))
+    expect(state.avatarStyle).toBe('pixel-art')
+    expect(events).toEqual([{ type: 'avatarStyle.changed', style: 'pixel-art', by: HOST }])
+  })
+
+  it('rechaza a quien no es admin y los estilos desconocidos', () => {
+    fails(table(), user({ type: 'SET_AVATAR_STYLE', style: 'pixel-art' }, U1), 'not-admin')
+    const unknownStyle = { type: 'SET_AVATAR_STYLE', style: 'nope' } as unknown as Command
+    fails(table(), user(unknownStyle, HOST), 'invalid-avatar-style')
+  })
+
+  it('elegir el estilo actual no cambia nada, también en mesas guardadas sin estilo', () => {
+    isNoop(table(), user({ type: 'SET_AVATAR_STYLE', style: DEFAULT_AVATAR_STYLE }, HOST))
+    const legacy = { ...table(), avatarStyle: undefined }
+    isNoop(legacy, user({ type: 'SET_AVATAR_STYLE', style: DEFAULT_AVATAR_STYLE }, HOST))
   })
 })
 

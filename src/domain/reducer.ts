@@ -1,3 +1,4 @@
+import { isAvatarStyleId, resolveAvatarStyle } from '@/domain/avatars'
 import {
   LIMITS,
   REACTION_EMOJIS,
@@ -30,6 +31,7 @@ import { getParticipant, getVote, isAdmin } from '@/domain/selectors'
 
 /** Mensajes por defecto, listos para un toast. Cada acción puede afinarlos. */
 export const DOMAIN_ERROR_MESSAGES: Record<DomainErrorCode, string> = {
+  'invalid-avatar-style': 'Ese estilo de avatar no existe',
   'not-admin': 'Solo un admin puede hacer esto',
   'not-host': 'Solo el anfitrión puede hacer esto',
   'not-participant': 'No estás en esta mesa',
@@ -146,6 +148,8 @@ function reduceUserAction(state: TableState, action: UserAction): ReduceResult {
       return setName(state, action, actor)
     case 'SET_TABLE_NAME':
       return setTableName(state, action)
+    case 'SET_AVATAR_STYLE':
+      return setAvatarStyle(state, action)
     case 'SET_DECK':
       return setDeck(state, action)
     case 'SET_STORY':
@@ -259,6 +263,15 @@ function setDeck(state: TableState, action: UserActionOf<'SET_DECK'>): ReduceRes
   if (deck === state.deck) return noop(state)
   if (hasVotes(state)) return reject(state, 'votes-in-progress', 'Reinicia la votación antes de cambiar el mazo')
   return apply(state, { deck }, [{ type: 'deck.changed', deck, by: action.by }])
+}
+
+function setAvatarStyle(state: TableState, action: UserActionOf<'SET_AVATAR_STYLE'>): ReduceResult {
+  const denied = requireAdmin(state, action.by, 'Solo un admin puede cambiar los avatares')
+  if (denied) return denied
+  const style: unknown = action.style
+  if (!isAvatarStyleId(style)) return reject(state, 'invalid-avatar-style')
+  if (style === resolveAvatarStyle(state.avatarStyle)) return noop(state)
+  return apply(state, { avatarStyle: style }, [{ type: 'avatarStyle.changed', style, by: action.by }])
 }
 
 function setStory(state: TableState, action: UserActionOf<'SET_STORY'>): ReduceResult {

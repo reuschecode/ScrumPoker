@@ -35,6 +35,8 @@ export function soundForEvent(ev: DomainEvent, me: UserId | null): SoundName | n
       return 'reveal'
     case 'round.finished':
       return 'newRound'
+    case 'avatarStyle.changed':
+      return 'click'
     case 'round.reset':
       return 'reset'
     case 'table.closed':

@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { History, Info, LogOut, MessageSquare, Users } from 'lucide-react'
+import { History, Info, LogOut, MessageSquare, Smile, Users } from 'lucide-react'
+import { AvatarStyleModal } from './AvatarStyleModal'
 import { LIMITS } from '@/domain/types'
 import { sanitizeTableName } from '@/domain/table'
 import { sanitizeName, useIdentity } from '@/store/identity'
@@ -33,6 +34,7 @@ export function Header({ code, unread, isDesktop, onOpenChat, onOpenHistory, onL
   const isSmUp = useMediaQuery('(min-width: 640px)')
   const isMdUp = useMediaQuery('(min-width: 768px)')
   const hintId = useId()
+  const [avatarsOpen, setAvatarsOpen] = useState(false)
 
   const myName = participants.find((p) => p.id === me)?.name ?? identityName
   const connected = participants.filter((p) => p.connected).length
@@ -90,6 +92,14 @@ export function Header({ code, unread, isDesktop, onOpenChat, onOpenHistory, onL
               <Users className="size-4" strokeWidth={1.75} aria-hidden />
               {connected}
             </span>
+          )}
+
+          {isAdmin && (
+            <IconButton
+              label="Estilo de avatares"
+              icon={<Smile className="size-5" strokeWidth={1.75} />}
+              onClick={() => setAvatarsOpen(true)}
+            />
           )}
 
           <SoundToggle />
@@ -184,6 +194,8 @@ export function Header({ code, unread, isDesktop, onOpenChat, onOpenHistory, onL
           </div>
         </div>
       )}
+
+      <AvatarStyleModal open={isAdmin && avatarsOpen} onClose={() => setAvatarsOpen(false)} />
     </header>
   )
 }

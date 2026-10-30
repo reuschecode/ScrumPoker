@@ -9,18 +9,6 @@
         "dev:local"
       ],
       "port": 5173
-    },
-    {
-      "name": "scrum-poker-peer",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "vite",
-        "--port",
-        "5174",
-        "--mode",
-        "peer"
-      ],
-      "port": 5174
     }
   ]
 }

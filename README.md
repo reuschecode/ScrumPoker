@@ -19,7 +19,20 @@ de quien la crea y el resto del equipo se conecta con un enlace o con el código
 - **Nombres editables**: cada participante elige y edita su nombre.
 - **Chat** de la mesa, **reacciones** con emojis que aparecen sobre cada participante,
   **sonidos** sintetizados para cada acción y **animaciones** suaves con framer-motion.
+- **Avatares**: los admins eligen entre 13 estilos, y toda la mesa los ve igual.
 - Iconos ligeros de [lucide](https://lucide.dev).
+
+## Créditos de avatares
+
+Los avatares se generan con [DiceBear](https://www.dicebear.com). Atribución de los estilos que la lista
+incluye (los de Thumbs, Lorelei, Notionists, Pixel Art, Shapes son CC0):
+
+- Adventurer Neutral, de Lisa Wischofsky ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)).
+- Big Smile, basado en Custom Avatar de Ashley Seo (CC BY 4.0).
+- Fun Emoji, basado en Fun Emoji Set de Davis Uche (CC BY 4.0).
+- Micah, basado en Avatar Illustration System de Micah Lanier (CC BY 4.0).
+- Personas, basado en Personas by Draftbit (CC BY 4.0).
+- Avataaars y Bottts, de Pablo Stanley (uso personal y comercial libre).
 
 ## Cómo correrlo
 
@@ -29,21 +42,19 @@ Requisitos: Node 20+.
 npm install
 ```
 
-Desarrollo en una sola máquina (varias pestañas del mismo navegador se ven entre sí):
+Desarrollo:
 
 ```bash
 npm run dev
 ```
 
-Abre `http://localhost:5173` y crea una mesa. Todas las pestañas de un navegador comparten identidad,
-así que para entrar como otro participante abre el enlace en otra pestaña añadiendo `?guest`:
-`http://localhost:5173/t/CÓDIGO?guest`.
+Abre `http://localhost:5173` y crea una mesa. Para unirte, abre el enlace en otro navegador (por
+ejemplo, Edge si la creaste en Chrome) o en otro dispositivo con la IP de tu equipo, que Vite muestra
+al arrancar. La pestaña de quien crea la mesa debe seguir abierta.
 
-Para probar entre dispositivos durante el desarrollo:
-
-```bash
-VITE_TRANSPORT=peer npm run dev -- --host
-```
+Para entrar como otro participante en el mismo navegador, añade `?guest` al enlace en otra pestaña:
+`http://localhost:5173/t/CÓDIGO?guest`. Sin conexión a internet, usa `npm run dev:local`, que solo
+conecta pestañas del mismo navegador.
 
 Build de producción (usa WebRTC entre dispositivos; se puede servir como sitio estático):
 
@@ -52,6 +63,25 @@ npm run build
 ```
 
 Otros scripts: `npm run typecheck`, `npm test`, `npm run preview`.
+
+## Despliegue en Vercel
+
+El proyecto ya incluye `vercel.json`, así que no hace falta configurar nada ni definir variables de
+entorno: el build de producción usa WebRTC.
+
+Desde la web: sube el repositorio a GitHub e impórtalo en [vercel.com/new](https://vercel.com/new).
+
+Desde la terminal:
+
+```bash
+npx vercel --prod
+```
+
+Compila con Node 22. Vercel solo sirve archivos estáticos: las mesas siguen viviendo en el navegador de
+quien las crea, y los enlaces `/t/CÓDIGO` se resuelven hacia la app. La señalización usa el servidor
+público de PeerJS, que no ofrece garantías de disponibilidad.
+
+WebRTC puede fallar entre redes muy restrictivas, porque no hay un servidor TURN configurado.
 
 ## Cómo funciona
 
@@ -66,9 +96,9 @@ cliente B ─┘   estado + reducer puro   └─ cliente D
   reducer puro (`src/domain/reducer.ts`). A cada cliente le envía una *proyección* en la que los
   votos ajenos van ocultos hasta que se revelan.
 - Transportes intercambiables (`VITE_TRANSPORT`):
-  - `local`: `BroadcastChannel`, pestañas del mismo navegador (por defecto en `npm run dev`).
+  - `local`: `BroadcastChannel`, pestañas del mismo navegador (con `npm run dev:local`; no necesita red).
   - `peer`: WebRTC con [PeerJS](https://peerjs.com) y su servidor público de señalización
-    (por defecto en el build de producción). Funciona entre dispositivos sin backend propio.
+    (por defecto en `npm run dev` y en el build de producción). Funciona entre dispositivos sin backend propio.
 - El anfitrión persiste la mesa en `localStorage`: si cierra la pestaña o recarga, la mesa se pausa
   y se reanuda al volver a abrir el mismo enlace. Los clientes se reconectan solos.
 - Cada navegador tiene una identidad local (`id` + secreto) para que los roles y las expulsiones se

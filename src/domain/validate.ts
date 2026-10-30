@@ -5,6 +5,7 @@
  * Los campos opcionales aceptan null: el serializador binario de PeerJS convierte undefined en null.
  */
 import type { DomainEvent, TableState } from '@/domain/types'
+import { isAvatarStyleId } from '@/domain/avatars'
 import { isDeckId } from '@/domain/deck'
 import { isValidUserId } from '@/domain/table'
 
@@ -90,6 +91,7 @@ export function isTableState(x: unknown): x is TableState {
     isStr(x.hostId) &&
     isStrArray(x.admins) &&
     isDeckId(x.deck) &&
+    (x.avatarStyle == null || isAvatarStyleId(x.avatarStyle)) &&
     Array.isArray(x.participants) &&
     x.participants.every(isParticipant) &&
     isRound(x.round) &&

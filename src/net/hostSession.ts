@@ -73,6 +73,7 @@ const CLIENT_COMMAND_TYPES: Record<Command['type'], true> = {
   SET_NAME: true,
   SET_TABLE_NAME: true,
   SET_DECK: true,
+  SET_AVATAR_STYLE: true,
   SET_STORY: true,
   VOTE: true,
   CLEAR_VOTE: true,

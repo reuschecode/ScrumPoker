@@ -1,3 +1,4 @@
+import { DEFAULT_AVATAR_STYLE } from '@/domain/avatars'
 import { LIMITS, type DeckId, type Round, type TableState, type UserId } from '@/domain/types'
 import { isDeckId } from '@/domain/deck'
 
@@ -89,6 +90,7 @@ export function createTableState(opts: CreateTableOptions): TableState {
     hostId: opts.host.id,
     admins: [opts.host.id],
     deck: isDeckId(opts.deck) ? opts.deck : 'fibonacci',
+    avatarStyle: DEFAULT_AVATAR_STYLE,
     participants: [{ id: opts.host.id, name: hostName, joinedAt: opts.now, connected: true }],
     round: newRound({ id: roundId(0), number: 1, story: '', startedAt: opts.now }),
     history: [],

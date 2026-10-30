@@ -214,4 +214,4 @@ Volumen maestro ~0.35, mute persistido en localStorage (`sp:sound`). `unlockAudi
 
 ## 6. Pruebas
 * `npm run typecheck`, `npm test` (vitest, reducer y stats), `npm run build`.
-* Manual: `npm run dev` (transporte `local`) y abrir 2-3 pestañas en `/t/CODE`.
+* Manual: `npm run dev` (transporte `peer`) y abrir `/t/CODE` en otro navegador, u otra pestaña con `?guest`.
