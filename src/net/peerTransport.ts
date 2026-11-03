@@ -66,9 +66,11 @@ export class PeerConn implements Conn {
     })
     dc.on('close', () => this.finish('remote', true))
     dc.on('error', (err) => this.finish(err.type, true))
-    // 'disconnected' es transitorio y ICE puede recuperarse solo: el cierre real llega con 'failed'.
+    // 'disconnected' llega a los pocos segundos de que el otro extremo desaparezca (navegador cerrado,
+    // equipo apagado), mientras que 'failed' tarda ~30 s. Se trata ya como cierre: si solo fue un
+    // bache, el cliente se reconecta solo y conserva su voto durante la gracia.
     dc.on('iceStateChanged', (state) => {
-      if (state === 'failed' || state === 'closed') this.finish(`ice-${state}`, true)
+      if (state === 'disconnected' || state === 'failed' || state === 'closed') this.finish(`ice-${state}`, true)
     })
   }
 

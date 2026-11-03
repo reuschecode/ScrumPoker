@@ -285,6 +285,20 @@ describe('ClientSession', () => {
     expect(session.getSnapshot().status).toBe('connected')
   })
 
+  it('al cerrar o recargar la página avisa leaving al host', async () => {
+    const page = new EventTarget()
+    vi.stubGlobal('window', page)
+    try {
+      const { session, transport } = makeSession(() => welcoming('c1'))
+      await session.start()
+      page.dispatchEvent(new Event('pagehide'))
+      expect(transport.ends[0].last('leaving')).toBeDefined()
+      session.leave()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('leave envía bye, cierra y cancela reintentos', async () => {
     const { session, transport } = makeSession(() => welcoming('c1'))
     await session.start()

@@ -27,6 +27,8 @@ export type ClientMessage =
   | { t: 'cmd'; seq: number; cmd: Command }
   | { t: 'ping' }
   | { t: 'bye' }
+  /** La página se cierra o se recarga: el host lo marca desconectado al instante (con gracia para volver). */
+  | { t: 'leaving' }
 
 export type RejectReason = 'kicked' | 'closed' | 'full' | 'bad-secret' | 'protocol'
 

@@ -286,6 +286,20 @@ describe('HostSession', () => {
     expect(events.some((e) => e.type === 'participant.left')).toBe(false)
   })
 
+  it('leaving lo marca desconectado al instante, sin sacarlo de la mesa hasta que vence la gracia', async () => {
+    const { session, transport } = await startHost()
+    const ana = new FakeClient(transport, 'u-ana', 's-ana', 'Ana')
+    ana.hello()
+
+    ana.conn.send({ t: 'leaving' } satisfies ClientMessage)
+
+    const anaNow = () => session.getAuthoritativeState().participants.find((p) => p.id === 'u-ana')
+    expect(anaNow()?.connected).toBe(false)
+    expect(ana.conn.closed).toBe(true)
+    await vi.advanceTimersByTimeAsync(DISCONNECT_GRACE_MS + 1)
+    expect(anaNow()).toBeUndefined()
+  })
+
   it('bye retira al participante de inmediato', async () => {
     const { session, transport } = await startHost()
     const ana = new FakeClient(transport, 'u-ana', 's-ana', 'Ana')

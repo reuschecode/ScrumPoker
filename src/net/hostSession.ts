@@ -328,6 +328,11 @@ export class HostSession implements Session {
       case 'bye':
         this.onBye(entry)
         break
+      case 'leaving':
+        // Cerró o recargó la pestaña: desconectado ya (en gris), no fuera de la mesa; la gracia le deja volver.
+        this.onConnClosed(entry)
+        entry.conn.close()
+        break
       default:
         break
     }

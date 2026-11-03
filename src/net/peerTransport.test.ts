@@ -54,16 +54,7 @@ describe('serialización', () => {
 })
 
 describe('PeerConn', () => {
-  it("ICE 'disconnected' no cierra la conexión: puede recuperarse", () => {
-    const { dc, conn, onClose } = makeConn()
-    dc.emit('iceStateChanged', 'disconnected')
-    expect(onClose).not.toHaveBeenCalled()
-    expect(dc.close).not.toHaveBeenCalled()
-    conn.send({ t: 'pong' })
-    expect(dc.send).toHaveBeenCalledTimes(1)
-  })
-
-  it.each(['failed', 'closed'])("ICE '%s' sí la cierra y libera el canal", (state) => {
+  it.each(['disconnected', 'failed', 'closed'])("ICE '%s' sí la cierra y libera el canal", (state) => {
     const { dc, cleanup, onClose } = makeConn()
     dc.emit('iceStateChanged', state)
     expect(onClose).toHaveBeenCalledWith(`ice-${state}`)

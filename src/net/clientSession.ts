@@ -70,6 +70,14 @@ export class ClientSession implements Session {
   private reconnectAttempt = 0
 
   private started = false
+  /** Al cerrar o recargar la página, avisa al host para que no espere a detectar la caída. */
+  private readonly onPageHide = () => {
+    try {
+      this.conn?.send({ t: 'leaving' } satisfies ClientMessage)
+    } catch {
+      /* ya caída */
+    }
+  }
   /** true cuando la sesión terminó (leave, expulsión, cierre o fallo definitivo). */
   private stopped = false
 
@@ -98,6 +106,7 @@ export class ClientSession implements Session {
   async start(): Promise<void> {
     if (this.started) return
     this.started = true
+    if (typeof window !== 'undefined') window.addEventListener('pagehide', this.onPageHide)
     this.setSnap({ status: 'connecting', lastError: null })
     for (let attempt = 1; attempt <= INITIAL_ATTEMPTS; attempt++) {
       if (this.stopped) return
@@ -125,6 +134,7 @@ export class ClientSession implements Session {
 
   leave(): void {
     this.stopped = true
+    this.removePageHide()
     this.clearSleep()
     const conn = this.conn
     this.conn = null
@@ -328,6 +338,10 @@ export class ClientSession implements Session {
     this.terminate('error', { code: 'reconnect-failed', message: 'No se pudo reconectar con la mesa' }, 'fatal')
   }
 
+  private removePageHide(): void {
+    if (typeof window !== 'undefined') window.removeEventListener('pagehide', this.onPageHide)
+  }
+
   /** Fin de la sesión con un estado terminal; no se vuelve a reconectar. */
   private terminate(
     status: ConnectionStatus,
@@ -336,6 +350,7 @@ export class ClientSession implements Session {
   ): void {
     if (this.stopped) return
     this.stopped = true
+    this.removePageHide()
     this.clearSleep()
     this.detachConn(true)
     this.setSnap(lastError ? { status, lastError: { ...lastError, at: this.now() } } : { status })
