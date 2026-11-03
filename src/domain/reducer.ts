@@ -14,6 +14,7 @@ import {
   type TableState,
   type UserAction,
   type UserId,
+  type SystemChatKind,
 } from '@/domain/types'
 import { getDeck, isCardOf, isDeckId } from '@/domain/deck'
 import { computeStats } from '@/domain/stats'
@@ -188,6 +189,26 @@ function reduceUserAction(state: TableState, action: UserAction): ReduceResult {
 // Comandos de sistema (solo los genera el host)
 // ---------------------------------------------------------------------------
 
+const SYSTEM_CHAT_TEXT: Record<SystemChatKind, string> = {
+  joined: 'se unió a la mesa',
+  reconnected: 'volvió a conectarse',
+  disconnected: 'se desconectó',
+  left: 'salió de la mesa',
+}
+
+/** Añade al chat un aviso de conexión. El id deriva de la versión, como el de los mensajes normales. */
+function withSystemChat(state: TableState, kind: SystemChatKind, p: { id: UserId; name: string }, at: number): ChatMessage[] {
+  const message: ChatMessage = {
+    id: messageId(state.version + 1),
+    userId: p.id,
+    name: p.name,
+    text: SYSTEM_CHAT_TEXT[kind],
+    at,
+    system: kind,
+  }
+  return [...state.chat, message].slice(-LIMITS.MAX_CHAT_MESSAGES)
+}
+
 function join(state: TableState, action: SystemActionOf<'JOIN'>): ReduceResult {
   const id: unknown = action.user?.id
   if (!isValidUserId(id)) return reject(state, 'invalid-text', 'Identificador no válido')
@@ -202,14 +223,19 @@ function join(state: TableState, action: SystemActionOf<'JOIN'>): ReduceResult {
     if (existing.connected && !renamed) return noop(state)
     const events: DomainEvent[] = []
     if (renamed) events.push({ type: 'participant.renamed', userId: id, name: nextName, previous: existing.name })
-    if (!existing.connected) events.push({ type: 'participant.reconnected', userId: id })
-    return apply(state, { participants: patchParticipant(state, id, { connected: true, name: nextName }) }, events)
+    const patch: Partial<TableState> = { participants: patchParticipant(state, id, { connected: true, name: nextName }) }
+    if (!existing.connected) {
+      events.push({ type: 'participant.reconnected', userId: id })
+      patch.chat = withSystemChat(state, 'reconnected', { id, name: nextName }, action.at)
+    }
+    return apply(state, patch, events)
   }
 
   if (!name) return reject(state, 'invalid-name', 'Necesitas un nombre para entrar')
   if (state.participants.length >= LIMITS.MAX_PARTICIPANTS) return reject(state, 'table-full')
   const participant: Participant = { id, name, joinedAt: action.at, connected: true }
-  return apply(state, { participants: [...state.participants, participant] }, [
+  const chat = withSystemChat(state, 'joined', participant, action.at)
+  return apply(state, { participants: [...state.participants, participant], chat }, [
     { type: 'participant.joined', userId: id, name },
   ])
 }
@@ -221,7 +247,9 @@ function disconnect(state: TableState, action: SystemActionOf<'DISCONNECT'>): Re
   }
   const participant = getParticipant(state, userId)
   if (!participant || !participant.connected) return noop(state)
-  return apply(state, { participants: patchParticipant(state, userId, { connected: false }) }, [
+  const patch: Partial<TableState> = { participants: patchParticipant(state, userId, { connected: false }) }
+  if (!action.quiet) patch.chat = withSystemChat(state, 'disconnected', participant, action.at)
+  return apply(state, patch, [
     { type: 'participant.disconnected', userId },
   ])
 }
@@ -233,7 +261,10 @@ function leave(state: TableState, action: SystemActionOf<'LEAVE'>): ReduceResult
   }
   const participant = getParticipant(state, userId)
   if (!participant) return noop(state)
-  return apply(state, withoutUser(state, participant), [{ type: 'participant.left', userId, name: participant.name }])
+  // Tras la gracia de una desconexión ya se avisó con "se desconectó"; solo una salida voluntaria se anuncia.
+  const patch = withoutUser(state, participant)
+  if (participant.connected) patch.chat = withSystemChat(state, 'left', participant, action.at)
+  return apply(state, patch, [{ type: 'participant.left', userId, name: participant.name }])
 }
 
 // ---------------------------------------------------------------------------

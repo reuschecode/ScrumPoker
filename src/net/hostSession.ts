@@ -214,7 +214,8 @@ export class HostSession implements Session {
         // Nadie sigue conectado tras un refresh: todos pasan a gracia hasta que reconecten.
         for (const p of this.state.participants) {
           if (p.id === this.identity.id) continue
-          if (p.connected) this.applySystem({ type: 'DISCONNECT', userId: p.id }, true)
+          // quiet: el host recargó; no es que esa persona se haya ido.
+          if (p.connected) this.applySystem({ type: 'DISCONNECT', userId: p.id, quiet: true }, true)
           this.startGrace(p.id)
         }
       }

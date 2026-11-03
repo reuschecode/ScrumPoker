@@ -11,7 +11,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowDown, MessagesSquare, Send } from 'lucide-react'
+import { ArrowDown, LogIn, LogOut, MessagesSquare, Send, Wifi, WifiOff } from 'lucide-react'
 import { LIMITS, type ChatMessage, type UserId } from '@/domain/types'
 import { useTable } from '@/store/hooks'
 import { cn, formatTime } from '@/lib/utils'
@@ -36,6 +36,8 @@ interface MessageGroup {
   at: number
   mine: boolean
   messages: ChatMessage[]
+  /** Aviso de conexión: va solo, nunca se agrupa. */
+  system?: ChatMessage['system']
 }
 
 function groupMessages(chat: ChatMessage[], me: UserId): MessageGroup[] {
@@ -43,7 +45,11 @@ function groupMessages(chat: ChatMessage[], me: UserId): MessageGroup[] {
   for (const msg of chat) {
     const last = groups.length > 0 ? groups[groups.length - 1] : undefined
     const prev = last ? last.messages[last.messages.length - 1] : undefined
-    if (last && prev && last.userId === msg.userId && last.name === msg.name && msg.at - prev.at <= GROUP_WINDOW_MS) {
+    if (msg.system) {
+      groups.push({ key: msg.id, userId: msg.userId, name: msg.name, at: msg.at, mine: false, messages: [msg], system: msg.system })
+      continue
+    }
+    if (last && prev && !last.system && last.userId === msg.userId && last.name === msg.name && msg.at - prev.at <= GROUP_WINDOW_MS) {
       last.messages.push(msg)
     } else {
       groups.push({ key: msg.id, userId: msg.userId, name: msg.name, at: msg.at, mine: msg.userId === me, messages: [msg] })
@@ -97,7 +103,7 @@ export function ChatPanel({ active }: ChatPanelProps) {
 
   const lastMessage = chat.length > 0 ? chat[chat.length - 1] : null
   const lastId = lastMessage?.id ?? null
-  const lastIsMine = lastMessage?.userId === me
+  const lastIsMine = lastMessage?.userId === me && !lastMessage.system
 
   useLayoutEffect(() => {
     const first = prevLastIdRef.current === undefined
@@ -174,7 +180,11 @@ export function ChatPanel({ active }: ChatPanelProps) {
             <ol className="flex flex-col gap-3">
               <AnimatePresence initial={false}>
                 {groups.map((group) => (
-                  <MessageGroupItem key={group.key} group={group} reduceMotion={reduceMotion} />
+                  group.system ? (
+                    <SystemNotice key={group.key} message={group.messages[0]} reduceMotion={reduceMotion} />
+                  ) : (
+                    <MessageGroupItem key={group.key} group={group} reduceMotion={reduceMotion} />
+                  )
                 ))}
               </AnimatePresence>
             </ol>
@@ -315,3 +325,35 @@ const MessageGroupItem = memo(
     a.group.messages.length === b.group.messages.length &&
     a.reduceMotion === b.reduceMotion,
 )
+
+const NOTICE_ICON = { joined: LogIn, reconnected: Wifi, disconnected: WifiOff, left: LogOut } as const
+
+/** Aviso de conexión centrado y discreto, distinto de una burbuja de mensaje. */
+const SystemNotice = memo(function SystemNotice({
+  message,
+  reduceMotion,
+}: {
+  message: ChatMessage
+  reduceMotion: boolean
+}) {
+  const Icon = NOTICE_ICON[message.system ?? 'joined']
+  const away = message.system === 'disconnected' || message.system === 'left'
+  return (
+    <motion.li
+      className="flex justify-center"
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={SPRING}
+    >
+      <p className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/4 px-3 py-1 text-[11px] text-ink-2">
+        <Icon className={cn('size-3 shrink-0', away ? 'text-ink-3' : 'text-mint')} strokeWidth={2} aria-hidden />
+        <span className="truncate">
+          <span className="font-semibold text-ink">{message.name}</span> {message.text}
+        </span>
+        <time dateTime={new Date(message.at).toISOString()} className="tabular shrink-0 text-ink-3">
+          {formatTime(message.at)}
+        </time>
+      </p>
+    </motion.li>
+  )
+})

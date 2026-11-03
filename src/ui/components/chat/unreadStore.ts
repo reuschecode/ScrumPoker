@@ -22,10 +22,15 @@ export const useUnreadStore = create<UnreadStore>((set) => ({
   reset: () => set({ code: null, lastReadId: null }),
 }))
 
-/** Mensajes posteriores al último leído; si ese ya salió del chat, todos cuentan como no leídos. */
-export function countUnread(chat: ReadonlyArray<{ id: string }>, lastReadId: string | null): number {
+/**
+ * Mensajes de personas posteriores al último leído; si ese ya salió del chat, cuentan todos.
+ * Los avisos de conexión no suman: no son conversación.
+ */
+export function countUnread(chat: ReadonlyArray<{ id: string; system?: unknown }>, lastReadId: string | null): number {
+  let count = 0
   for (let i = chat.length - 1; i >= 0; i--) {
-    if (chat[i].id === lastReadId) return chat.length - 1 - i
+    if (chat[i].id === lastReadId) return count
+    if (!chat[i].system) count++
   }
-  return chat.length
+  return count
 }

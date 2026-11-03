@@ -133,12 +133,17 @@ export interface HistoryEntry {
   finishedBy: UserId
 }
 
+/** Avisos que la mesa escribe sola en el chat; `userId` y `name` son de quien protagoniza el aviso. */
+export type SystemChatKind = 'joined' | 'reconnected' | 'disconnected' | 'left'
+
 export interface ChatMessage {
   id: string
   userId: UserId
   name: string
   text: string
   at: number
+  /** Presente solo en los avisos de sistema. */
+  system?: SystemChatKind
 }
 
 export interface TableState {
@@ -189,7 +194,7 @@ export type Command =
 /** Comandos que solo genera el host a partir de eventos de conexión. */
 export type SystemCommand =
   | { type: 'JOIN'; user: { id: UserId; name: string } } // reconexión si ya existe
-  | { type: 'DISCONNECT'; userId: UserId } // marca connected=false
+  | { type: 'DISCONNECT'; userId: UserId; quiet?: boolean } // marca connected=false; quiet: sin aviso en el chat
   | { type: 'LEAVE'; userId: UserId } // retira al participante (tras la gracia o "bye")
 
 export type UserAction = Command & { by: UserId; at: number }

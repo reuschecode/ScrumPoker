@@ -80,7 +80,9 @@ function isHistoryEntry(x: unknown): boolean {
 
 function isChatMessage(x: unknown): boolean {
   if (!isObj(x)) return false
-  return isStr(x.id) && isStr(x.userId) && isStr(x.name) && isStr(x.text) && isTimestamp(x.at)
+  const system = x.system
+  const systemOk = system == null || system === 'joined' || system === 'reconnected' || system === 'disconnected' || system === 'left'
+  return isStr(x.id) && isStr(x.userId) && isStr(x.name) && isStr(x.text) && isTimestamp(x.at) && systemOk
 }
 
 export function isTableState(x: unknown): x is TableState {

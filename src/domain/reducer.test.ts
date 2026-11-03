@@ -829,15 +829,47 @@ describe('GRANT_ADMIN y REVOKE_ADMIN', () => {
   })
 })
 
+describe('avisos de conexión en el chat', () => {
+  const notices = (s: TableState) => s.chat.filter((m) => m.system).map((m) => `${m.name} ${m.system}`)
+
+  it('anuncia entradas, desconexiones, reconexiones y salidas voluntarias', () => {
+    let s = table()
+    s = ok(s, { type: 'DISCONNECT', userId: U1, at: NOW + 10 })
+    s = ok(s, join(U1, 'Luis', NOW + 11))
+    s = ok(s, { type: 'LEAVE', userId: U2, at: NOW + 12 })
+    expect(notices(s)).toEqual(['Luis joined', 'Pedro joined', 'Luis disconnected', 'Luis reconnected', 'Pedro left'])
+    const last = s.chat.at(-1)
+    expect(last).toMatchObject({ userId: U2, name: 'Pedro', text: 'salió de la mesa', at: NOW + 12, system: 'left' })
+  })
+
+  it('no repite el aviso cuando vence la gracia de quien ya se desconectó', () => {
+    let s = ok(table(), { type: 'DISCONNECT', userId: U1, at: NOW + 10 })
+    s = ok(s, { type: 'LEAVE', userId: U1, at: NOW + 30 })
+    expect(notices(s)).toEqual(['Luis joined', 'Pedro joined', 'Luis disconnected'])
+  })
+
+  it('una desconexión quiet (el host recargó) no deja aviso', () => {
+    const s = ok(table(), { type: 'DISCONNECT', userId: U1, quiet: true, at: NOW + 10 })
+    expect(s.participants.find((p) => p.id === U1)?.connected).toBe(false)
+    expect(notices(s)).toEqual(['Luis joined', 'Pedro joined'])
+  })
+
+  it('cambiar de nombre al reconectar estando conectado no deja aviso', () => {
+    const s = ok(table(), join(U1, 'Luis M.', NOW + 10))
+    expect(notices(s)).toEqual(['Luis joined', 'Pedro joined'])
+  })
+})
+
 describe('CHAT', () => {
   it('agrega el mensaje con id determinista y emite chat.message', () => {
     const s = table()
     const { state, events } = okWithEvents(s, user({ type: 'CHAT', text: '  hola\n¿qué tal?  ' }, U1, NOW + 3))
     const message: ChatMessage = { id: `m${state.version}`, userId: U1, name: 'Luis', text: 'hola\n¿qué tal?', at: NOW + 3 }
-    expect(state.chat).toEqual([message])
+    expect(state.chat.at(-1)).toEqual(message)
+    expect(state.chat.filter((m) => !m.system)).toEqual([message])
     expect(events).toEqual([{ type: 'chat.message', message }])
     const again = ok(state, user({ type: 'CHAT', text: 'otro' }, HOST))
-    expect(again.chat.map((m) => m.id)).toEqual([`m${state.version}`, `m${again.version}`])
+    expect(again.chat.filter((m) => !m.system).map((m) => m.id)).toEqual([`m${state.version}`, `m${again.version}`])
   })
 
   it('rechaza texto vacío o demasiado largo', () => {
@@ -993,7 +1025,7 @@ describe('caracteres invisibles', () => {
   it('el chat conserva saltos de línea y emojis compuestos, pero no los controles', () => {
     const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}'
     const s = ok(table(), user({ type: 'CHAT', text: `hola\n\u202E${family} \u2764\uFE0F` }, U1))
-    expect(s.chat[0].text).toBe(`hola\n${family} \u2764\uFE0F`)
+    expect(s.chat.at(-1)?.text).toBe(`hola\n${family} \u2764\uFE0F`)
     fails(table(), user({ type: 'CHAT', text: '\u200B\u200B' }, U1), 'invalid-text')
   })
 

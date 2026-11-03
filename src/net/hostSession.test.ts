@@ -366,7 +366,7 @@ describe('HostSession', () => {
     ana.hello()
     const luis = new FakeClient(transport, 'u-luis', 's-luis', 'Luis')
     luis.hello()
-    const chats = () => session.getAuthoritativeState().chat.length
+    const chats = () => session.getAuthoritativeState().chat.filter((m) => !m.system).length
 
     for (let i = 1; i <= 20; i++) ana.cmd(i, { type: 'CHAT', text: `m${i}` })
     expect(chats()).toBe(20)
@@ -401,7 +401,7 @@ describe('HostSession', () => {
       vi.advanceTimersByTime(1_000)
     }
     expect(ana.last('error')).toBeUndefined()
-    expect(session.getAuthoritativeState().chat).toHaveLength(50)
+    expect(session.getAuthoritativeState().chat.filter((m) => !m.system)).toHaveLength(50)
   })
 
   it('olvida los secretos de los ausentes más antiguos pero no los de quienes están', async () => {
