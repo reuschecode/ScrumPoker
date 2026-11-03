@@ -56,6 +56,19 @@ function showEventToast(ev: DomainEvent, state: TableState, me: UserId | undefin
     case 'table.renamed':
       if (ev.by !== me) toast.show(`Mesa renombrada: ${ev.name}`, { emoji: '✏️' })
       return
+    case 'history.entryUpdated':
+      if (ev.by !== me) {
+        const { story, finalScore } = ev.changes
+        const parts = [
+          story && `Historia: ${truncate(story.to || 'Sin nombre', 40)}`,
+          finalScore && `Puntaje: ${finalScore.from} → ${finalScore.to}`,
+        ].filter(Boolean)
+        toast.show(`${nameOf(state, ev.by, 'Un admin')} editó la ronda ${ev.number}`, {
+          emoji: '✏️',
+          description: parts.join(' · '),
+        })
+      }
+      return
     case 'avatarStyle.changed':
       if (ev.by !== me) toast.show(`${nameOf(state, ev.by, 'Un admin')} cambió los avatares`, { emoji: '🎭' })
       return

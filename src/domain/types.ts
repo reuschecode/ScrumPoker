@@ -177,6 +177,8 @@ export type Command =
   | { type: 'REVEAL' } // admin; requiere ≥1 voto
   | { type: 'RESET_ROUND' } // admin; vuelve a ocultar y borra votos SIN guardar historial
   | { type: 'FINISH_ROUND'; finalScore: string; nextStory?: string } // admin; requiere revealed; guarda historial y abre nueva ronda
+  /** admin; corrige una ronda del historial: solo su historia y su puntaje final. Los campos ausentes no cambian. */
+  | { type: 'UPDATE_HISTORY_ENTRY'; roundId: string; story?: string; finalScore?: string }
   | { type: 'KICK'; userId: UserId } // admin; no al host ni a uno mismo
   | { type: 'GRANT_ADMIN'; userId: UserId } // admin
   | { type: 'REVOKE_ADMIN'; userId: UserId } // admin; no al host
@@ -215,6 +217,14 @@ export type DomainEvent =
   | { type: 'round.revealed'; by: UserId; roundId: string; stats: VoteStats }
   | { type: 'round.reset'; by: UserId }
   | { type: 'round.finished'; by: UserId; entry: HistoryEntry }
+  | {
+      type: 'history.entryUpdated'
+      roundId: string
+      number: number
+      /** Solo los campos que cambiaron, con su valor anterior. */
+      changes: { story?: { from: string; to: string }; finalScore?: { from: string; to: string } }
+      by: UserId
+    }
   | { type: 'admin.granted'; userId: UserId; by: UserId }
   | { type: 'admin.revoked'; userId: UserId; by: UserId }
   | { type: 'chat.message'; message: ChatMessage }
@@ -235,6 +245,7 @@ export type DomainErrorCode =
   | 'invalid-text'
   | 'invalid-deck'
   | 'invalid-avatar-style'
+  | 'unknown-round'
   | 'empty'
   | 'already-revealed'
   | 'not-revealed'

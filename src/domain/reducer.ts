@@ -32,6 +32,7 @@ import { getParticipant, getVote, isAdmin } from '@/domain/selectors'
 /** Mensajes por defecto, listos para un toast. Cada acción puede afinarlos. */
 export const DOMAIN_ERROR_MESSAGES: Record<DomainErrorCode, string> = {
   'invalid-avatar-style': 'Ese estilo de avatar no existe',
+  'unknown-round': 'Esa ronda ya no está en el historial',
   'not-admin': 'Solo un admin puede hacer esto',
   'not-host': 'Solo el anfitrión puede hacer esto',
   'not-participant': 'No estás en esta mesa',
@@ -164,6 +165,8 @@ function reduceUserAction(state: TableState, action: UserAction): ReduceResult {
       return resetRound(state, action)
     case 'FINISH_ROUND':
       return finishRound(state, action)
+    case 'UPDATE_HISTORY_ENTRY':
+      return updateHistoryEntry(state, action)
     case 'KICK':
       return kick(state, action)
     case 'GRANT_ADMIN':
@@ -368,6 +371,42 @@ function finishRound(state: TableState, action: UserActionOf<'FINISH_ROUND'>): R
     startedAt: action.at,
   })
   return apply(state, { history, round }, [{ type: 'round.finished', by: action.by, entry }])
+}
+
+function updateHistoryEntry(state: TableState, action: UserActionOf<'UPDATE_HISTORY_ENTRY'>): ReduceResult {
+  const denied = requireAdmin(state, action.by, 'Solo un admin puede editar el historial')
+  if (denied) return denied
+  const roundId = str(action.roundId)
+  const index = state.history.findIndex((e) => e.roundId === roundId)
+  if (index < 0) return reject(state, 'unknown-round', 'Esa ronda ya no está en el historial')
+  const entry = state.history[index]
+
+  const changes: Extract<DomainEvent, { type: 'history.entryUpdated' }>['changes'] = {}
+  const patch: Partial<HistoryEntry> = {}
+  if (action.finalScore !== undefined) {
+    const finalScore = sanitizeFreeText(str(action.finalScore))
+    if (!finalScore || finalScore.length > LIMITS.MAX_FINAL_SCORE) {
+      return reject(state, 'invalid-text', `Escribe un puntaje final (máximo ${LIMITS.MAX_FINAL_SCORE} caracteres)`)
+    }
+    if (finalScore !== entry.finalScore) {
+      patch.finalScore = finalScore
+      changes.finalScore = { from: entry.finalScore, to: finalScore }
+    }
+  }
+  if (action.story !== undefined) {
+    // Como al jugarla, la historia puede quedar vacía ("Sin nombre").
+    const story = sanitizeStory(str(action.story))
+    if (story !== entry.story) {
+      patch.story = story
+      changes.story = { from: entry.story, to: story }
+    }
+  }
+  if (!changes.finalScore && !changes.story) return noop(state)
+
+  const history = state.history.map((e, i) => (i === index ? { ...e, ...patch } : e))
+  return apply(state, { history }, [
+    { type: 'history.entryUpdated', roundId, number: entry.number, changes, by: action.by },
+  ])
 }
 
 function kick(state: TableState, action: UserActionOf<'KICK'>): ReduceResult {

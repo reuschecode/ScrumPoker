@@ -80,6 +80,7 @@ const CLIENT_COMMAND_TYPES: Record<Command['type'], true> = {
   REVEAL: true,
   RESET_ROUND: true,
   FINISH_ROUND: true,
+  UPDATE_HISTORY_ENTRY: true,
   KICK: true,
   GRANT_ADMIN: true,
   REVOKE_ADMIN: true,

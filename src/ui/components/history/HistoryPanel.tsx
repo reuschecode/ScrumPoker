@@ -1,13 +1,14 @@
-import { memo, useCallback, useId, useMemo, useState } from 'react'
+import { memo, useCallback, useId, useMemo, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ChevronDown, Download, History } from 'lucide-react'
-import type { HistoryEntry } from '@/domain/types'
+import { Check, ChevronDown, Download, History, Pencil } from 'lucide-react'
+import { LIMITS, type Command, type HistoryEntry } from '@/domain/types'
 import { cardNumericValue } from '@/domain/deck'
 import { useTable } from '@/store/hooks'
 import { cn, formatTime } from '@/lib/utils'
-import { Badge, Button, IconButton } from '@/ui/primitives'
+import { Badge, Button, IconButton, Input } from '@/ui/primitives'
 
 const EMPTY_HISTORY: HistoryEntry[] = []
+const EMPTY_CARDS: readonly string[] = []
 const SPRING = { type: 'spring', stiffness: 360, damping: 30 } as const
 
 function formatNumber(n: number): string {
@@ -55,7 +56,8 @@ function downloadTextFile(filename: string, content: string, type: string) {
 }
 
 export function HistoryPanel() {
-  const { state, code } = useTable()
+  const { state, code, isAdmin, deck, dispatch } = useTable()
+  const cards = deck?.cards ?? EMPTY_CARDS
   const history = state?.history ?? EMPTY_HISTORY
   const reduceMotion = !!useReducedMotion()
 
@@ -107,7 +109,14 @@ export function HistoryPanel() {
         <ol className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3" aria-label="Rondas cerradas">
           <AnimatePresence initial={false}>
             {entries.map((entry) => (
-              <HistoryRow key={entry.roundId} entry={entry} reduceMotion={reduceMotion} />
+              <HistoryRow
+                key={entry.roundId}
+                entry={entry}
+                reduceMotion={reduceMotion}
+                canEdit={isAdmin}
+                cards={cards}
+                dispatch={dispatch}
+              />
             ))}
           </AnimatePresence>
         </ol>
@@ -131,11 +140,17 @@ function EmptyState() {
 interface HistoryRowProps {
   entry: HistoryEntry
   reduceMotion: boolean
+  /** Admins (incluido el anfitrión) pueden corregir el puntaje final. */
+  canEdit: boolean
+  cards: readonly string[]
+  dispatch: (cmd: Command) => void
 }
 
 const HistoryRow = memo(
-  function HistoryRow({ entry, reduceMotion }: HistoryRowProps) {
+  function HistoryRow({ entry, reduceMotion, canEdit, cards, dispatch }: HistoryRowProps) {
     const [open, setOpen] = useState(false)
+    const [editing, setEditing] = useState(false)
+    const isEditing = canEdit && editing
     const votesId = useId()
     const { number, story, finalScore, stats, votes, finishedAt } = entry
 
@@ -150,9 +165,21 @@ const HistoryRow = memo(
         <div className="flex items-center gap-3 px-3 py-2">
           <span className="tabular shrink-0 font-mono text-xs text-ink-3">#{number}</span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-ink" title={story || undefined}>
-              {story || <span className="font-normal italic text-ink-3">Sin nombre</span>}
-            </p>
+            {canEdit ? (
+              <button
+                type="button"
+                onClick={() => setEditing((e) => !e)}
+                aria-expanded={isEditing}
+                title="Editar ronda"
+                className="block max-w-full truncate text-left text-sm font-semibold text-ink underline-offset-2 hover:underline"
+              >
+                {story || <span className="font-normal italic text-ink-3">Sin nombre</span>}
+              </button>
+            ) : (
+              <p className="truncate text-sm font-semibold text-ink" title={story || undefined}>
+                {story || <span className="font-normal italic text-ink-3">Sin nombre</span>}
+              </p>
+            )}
             <p className="truncate text-[11px] text-ink-3">
               sugerido <span className="text-ink-2">{stats.suggested ?? '—'}</span> · promedio{' '}
               <span className="text-ink-2">{stats.average === null ? '—' : formatNumber(stats.average)}</span> ·{' '}
@@ -161,10 +188,30 @@ const HistoryRow = memo(
               </time>
             </p>
           </div>
-          <span className="tabular inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft px-2 text-lg font-extrabold text-accent">
-            <span className="sr-only">Puntaje final: </span>
-            {finalScore}
-          </span>
+          {canEdit ? (
+            <button
+              type="button"
+              onClick={() => setEditing((e) => !e)}
+              aria-expanded={isEditing}
+              aria-label={`Puntaje final: ${finalScore}. Editar la ronda ${number}`}
+              title="Editar ronda"
+              className={cn(
+                'tabular group relative inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-lg px-2 text-lg font-extrabold text-accent',
+                'bg-accent-soft transition-[box-shadow,background-color] duration-200 hover:shadow-glow',
+                isEditing && 'shadow-glow',
+              )}
+            >
+              {finalScore}
+              <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-surface-3 text-ink-2 opacity-70 transition-opacity group-hover:opacity-100">
+                <Pencil className="size-2.5" strokeWidth={2} aria-hidden />
+              </span>
+            </button>
+          ) : (
+            <span className="tabular inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft px-2 text-lg font-extrabold text-accent">
+              <span className="sr-only">Puntaje final: </span>
+              {finalScore}
+            </span>
+          )}
           <IconButton
             size="sm"
             label={open ? 'Ocultar votos' : 'Ver votos'}
@@ -180,6 +227,30 @@ const HistoryRow = memo(
             }
           />
         </div>
+
+        <AnimatePresence initial={false}>
+          {isEditing && (
+            <motion.div
+              key="edit"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }}
+              className="overflow-hidden"
+            >
+              <EntryEditor
+                story={story}
+                finalScore={finalScore}
+                cards={cards}
+                onCancel={() => setEditing(false)}
+                onSave={(changes) => {
+                  dispatch({ type: 'UPDATE_HISTORY_ENTRY', roundId: entry.roundId, ...changes })
+                  setEditing(false)
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence initial={false}>
           {open && (
@@ -215,6 +286,98 @@ const HistoryRow = memo(
   (a, b) =>
     a.entry.roundId === b.entry.roundId &&
     a.entry.finalScore === b.entry.finalScore &&
+    a.entry.story === b.entry.story &&
     a.entry.votes.length === b.entry.votes.length &&
-    a.reduceMotion === b.reduceMotion,
+    a.reduceMotion === b.reduceMotion &&
+    a.canEdit === b.canEdit &&
+    a.cards === b.cards &&
+    a.dispatch === b.dispatch,
 )
+
+interface EntryEditorProps {
+  story: string
+  finalScore: string
+  cards: readonly string[]
+  /** Solo los campos que cambiaron. */
+  onSave: (changes: { story?: string; finalScore?: string }) => void
+  onCancel: () => void
+}
+
+/** Corrige una ronda guardada: su historia y su puntaje final (cartas del mazo o un valor libre corto). */
+function EntryEditor({ story, finalScore, cards, onSave, onCancel }: EntryEditorProps) {
+  const [storyDraft, setStoryDraft] = useState(story)
+  const [scoreDraft, setScoreDraft] = useState(finalScore)
+  const cleanStory = storyDraft.trim()
+  const cleanScore = scoreDraft.trim()
+  const storyChanged = cleanStory !== story
+  const scoreChanged = cleanScore !== finalScore
+  const canSave = cleanScore.length > 0 && (storyChanged || scoreChanged)
+
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!canSave) return
+    onSave({
+      ...(storyChanged ? { story: cleanStory } : {}),
+      ...(scoreChanged ? { finalScore: cleanScore } : {}),
+    })
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation()
+          onCancel()
+        }
+      }}
+      className="flex flex-col gap-3 border-t border-line px-3 py-2.5"
+    >
+      <Input
+        label="Historia de usuario"
+        value={storyDraft}
+        onChange={(e) => setStoryDraft(e.target.value)}
+        maxLength={LIMITS.MAX_STORY}
+        placeholder="Sin nombre"
+        autoFocus
+      />
+      <div className="flex flex-col gap-1.5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-3">Puntaje final</p>
+        <div role="group" aria-label="Cartas del mazo" className="flex flex-wrap gap-1.5">
+          {cards.map((card) => {
+            const selected = scoreDraft === card
+            return (
+              <button
+                key={card}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setScoreDraft(card)}
+                className={cn(
+                  'tabular h-8 min-w-8 rounded-md border px-2 text-sm font-bold transition-colors',
+                  selected ? 'border-accent bg-accent text-bg' : 'border-line bg-surface-2 text-ink hover:bg-surface-3',
+                )}
+              >
+                {card}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <Input
+        label="Otro valor"
+        value={scoreDraft}
+        onChange={(e) => setScoreDraft(e.target.value)}
+        maxLength={LIMITS.MAX_FINAL_SCORE}
+        error={cleanScore ? undefined : 'El puntaje final no puede quedar vacío'}
+      />
+      <div className="flex justify-end gap-2">
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button type="submit" size="sm" variant="mint" disabled={!canSave} icon={<Check className="size-4" strokeWidth={1.75} />}>
+          Guardar
+        </Button>
+      </div>
+    </form>
+  )
+}

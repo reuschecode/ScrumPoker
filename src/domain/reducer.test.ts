@@ -321,6 +321,69 @@ describe('DISCONNECT', () => {
   })
 })
 
+describe('UPDATE_HISTORY_ENTRY', () => {
+  const withHistory = () => {
+    let s = table()
+    s = ok(s, user({ type: 'SET_STORY', story: 'HU-1 Login' }, HOST))
+    s = ok(s, user({ type: 'VOTE', value: '8' }, U1))
+    s = ok(s, user({ type: 'REVEAL' }, HOST))
+    s = ok(s, user({ type: 'FINISH_ROUND', finalScore: '8' }, HOST))
+    return s
+  }
+  const edit = (roundId: string, fields: { story?: string; finalScore?: string }) =>
+    ({ type: 'UPDATE_HISTORY_ENTRY', roundId, ...fields }) as Command
+
+  it('un admin cambia la historia y el puntaje final, y nada más', () => {
+    const s = withHistory()
+    const before = s.history[0]
+    const { state, events } = okWithEvents(s, user(edit(before.roundId, { story: ' HU-1 Login con Google ', finalScore: ' 5 ' }), HOST))
+    expect(state.history[0]).toEqual({ ...before, story: 'HU-1 Login con Google', finalScore: '5' })
+    expect(state.round).toBe(s.round)
+    expect(events).toEqual([
+      {
+        type: 'history.entryUpdated',
+        roundId: before.roundId,
+        number: 1,
+        changes: { story: { from: 'HU-1 Login', to: 'HU-1 Login con Google' }, finalScore: { from: '8', to: '5' } },
+        by: HOST,
+      },
+    ])
+  })
+
+  it('un campo ausente no cambia, y la historia puede quedar vacía', () => {
+    const s = withHistory()
+    const roundId = s.history[0].roundId
+    const onlyScore = ok(s, user(edit(roundId, { finalScore: '5' }), HOST))
+    expect(onlyScore.history[0].story).toBe('HU-1 Login')
+    const noStory = ok(s, user(edit(roundId, { story: '   ' }), HOST))
+    expect(noStory.history[0]).toMatchObject({ story: '', finalScore: '8' })
+  })
+
+  it('también puede un admin nombrado, pero no un participante normal', () => {
+    let s = withHistory()
+    const roundId = s.history[0].roundId
+    fails(s, user(edit(roundId, { story: 'X' }), U1), 'not-admin')
+    s = ok(s, user({ type: 'GRANT_ADMIN', userId: U1 }, HOST))
+    expect(ok(s, user(edit(roundId, { story: 'X' }), U1)).history[0].story).toBe('X')
+  })
+
+  it('rechaza rondas inexistentes y puntajes vacíos o largos; sin cambios reales no hace nada', () => {
+    const s = withHistory()
+    const roundId = s.history[0].roundId
+    fails(s, user(edit('nope', { finalScore: '5' }), HOST), 'unknown-round')
+    fails(s, user(edit(roundId, { finalScore: '  ' }), HOST), 'invalid-text')
+    fails(s, user(edit(roundId, { finalScore: 'x'.repeat(13), story: 'otra' }), HOST), 'invalid-text')
+    isNoop(s, user(edit(roundId, { finalScore: '8', story: 'HU-1 Login' }), HOST))
+    isNoop(s, user(edit(roundId, {}), HOST))
+  })
+
+  it('recorta la historia al máximo permitido', () => {
+    const s = withHistory()
+    const state = ok(s, user(edit(s.history[0].roundId, { story: 'x'.repeat(LIMITS.MAX_STORY + 20) }), HOST))
+    expect(state.history[0].story).toHaveLength(LIMITS.MAX_STORY)
+  })
+})
+
 describe('SET_AVATAR_STYLE', () => {
   it('un admin cambia el estilo y se emite el evento', () => {
     const { state, events } = okWithEvents(table(), user({ type: 'SET_AVATAR_STYLE', style: 'pixel-art' }, HOST))
