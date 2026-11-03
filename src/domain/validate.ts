@@ -81,7 +81,7 @@ function isHistoryEntry(x: unknown): boolean {
 function isChatMessage(x: unknown): boolean {
   if (!isObj(x)) return false
   const system = x.system
-  const systemOk = system == null || system === 'joined' || system === 'reconnected' || system === 'disconnected' || system === 'left'
+  const systemOk = system == null || system === 'joined' || system === 'reconnected' || system === 'disconnected' || system === 'left' || system === 'roundFinished'
   return isStr(x.id) && isStr(x.userId) && isStr(x.name) && isStr(x.text) && isTimestamp(x.at) && systemOk
 }
 

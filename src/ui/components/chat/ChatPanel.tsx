@@ -11,7 +11,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowDown, LogIn, LogOut, MessagesSquare, Send, Wifi, WifiOff } from 'lucide-react'
+import { ArrowDown, Flag, LogIn, LogOut, MessagesSquare, Send, Wifi, WifiOff } from 'lucide-react'
 import { LIMITS, type ChatMessage, type UserId } from '@/domain/types'
 import { useTable } from '@/store/hooks'
 import { cn, formatTime } from '@/lib/utils'
@@ -326,7 +326,7 @@ const MessageGroupItem = memo(
     a.reduceMotion === b.reduceMotion,
 )
 
-const NOTICE_ICON = { joined: LogIn, reconnected: Wifi, disconnected: WifiOff, left: LogOut } as const
+const NOTICE_ICON = { joined: LogIn, reconnected: Wifi, disconnected: WifiOff, left: LogOut, roundFinished: Flag } as const
 
 /** Aviso de conexión centrado y discreto, distinto de una burbuja de mensaje. */
 const SystemNotice = memo(function SystemNotice({
@@ -338,6 +338,7 @@ const SystemNotice = memo(function SystemNotice({
 }) {
   const Icon = NOTICE_ICON[message.system ?? 'joined']
   const away = message.system === 'disconnected' || message.system === 'left'
+  const round = message.system === 'roundFinished'
   return (
     <motion.li
       className="flex justify-center"
@@ -346,7 +347,7 @@ const SystemNotice = memo(function SystemNotice({
       transition={SPRING}
     >
       <p className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/4 px-3 py-1 text-[11px] text-ink-2">
-        <Icon className={cn('size-3 shrink-0', away ? 'text-ink-3' : 'text-mint')} strokeWidth={2} aria-hidden />
+        <Icon className={cn('size-3 shrink-0', away ? 'text-ink-3' : round ? 'text-accent' : 'text-mint')} strokeWidth={2} aria-hidden />
         <span className="truncate">
           <span className="font-semibold text-ink">{message.name}</span> {message.text}
         </span>

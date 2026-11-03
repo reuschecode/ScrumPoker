@@ -189,20 +189,31 @@ function reduceUserAction(state: TableState, action: UserAction): ReduceResult {
 // Comandos de sistema (solo los genera el host)
 // ---------------------------------------------------------------------------
 
-const SYSTEM_CHAT_TEXT: Record<SystemChatKind, string> = {
+const SYSTEM_CHAT_TEXT: Record<Exclude<SystemChatKind, 'roundFinished'>, string> = {
   joined: 'se unió a la mesa',
   reconnected: 'volvió a conectarse',
   disconnected: 'se desconectó',
   left: 'salió de la mesa',
 }
 
+function roundFinishedText(entry: HistoryEntry): string {
+  const story = entry.story ? ` «${entry.story}»` : ''
+  return `cerró la ronda ${entry.number}${story} con ${entry.finalScore}`
+}
+
 /** Añade al chat un aviso de conexión. El id deriva de la versión, como el de los mensajes normales. */
-function withSystemChat(state: TableState, kind: SystemChatKind, p: { id: UserId; name: string }, at: number): ChatMessage[] {
+function withSystemChat(
+  state: TableState,
+  kind: SystemChatKind,
+  p: { id: UserId; name: string },
+  at: number,
+  text: string = kind === 'roundFinished' ? '' : SYSTEM_CHAT_TEXT[kind],
+): ChatMessage[] {
   const message: ChatMessage = {
     id: messageId(state.version + 1),
     userId: p.id,
     name: p.name,
-    text: SYSTEM_CHAT_TEXT[kind],
+    text,
     at,
     system: kind,
   }
@@ -401,7 +412,9 @@ function finishRound(state: TableState, action: UserActionOf<'FINISH_ROUND'>): R
     story: sanitizeStory(str(action.nextStory)),
     startedAt: action.at,
   })
-  return apply(state, { history, round }, [{ type: 'round.finished', by: action.by, entry }])
+  const admin = getParticipant(state, action.by)
+  const chat = withSystemChat(state, 'roundFinished', { id: action.by, name: admin?.name ?? 'Un admin' }, action.at, roundFinishedText(entry))
+  return apply(state, { history, round, chat }, [{ type: 'round.finished', by: action.by, entry }])
 }
 
 function updateHistoryEntry(state: TableState, action: UserActionOf<'UPDATE_HISTORY_ENTRY'>): ReduceResult {

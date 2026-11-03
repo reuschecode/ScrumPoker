@@ -133,8 +133,11 @@ export interface HistoryEntry {
   finishedBy: UserId
 }
 
-/** Avisos que la mesa escribe sola en el chat; `userId` y `name` son de quien protagoniza el aviso. */
-export type SystemChatKind = 'joined' | 'reconnected' | 'disconnected' | 'left'
+/**
+ * Avisos que la mesa escribe sola en el chat; `userId` y `name` son de quien protagoniza el aviso
+ * (en 'roundFinished', el admin que guardó la ronda).
+ */
+export type SystemChatKind = 'joined' | 'reconnected' | 'disconnected' | 'left' | 'roundFinished'
 
 export interface ChatMessage {
   id: string

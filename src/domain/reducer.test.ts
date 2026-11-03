@@ -848,6 +848,25 @@ describe('avisos de conexión en el chat', () => {
     expect(notices(s)).toEqual(['Luis joined', 'Pedro joined', 'Luis disconnected'])
   })
 
+  it('anuncia quién cerró la ronda, con la historia y el puntaje final', () => {
+    let s = table()
+    s = ok(s, user({ type: 'SET_STORY', story: 'HU-1 Login' }, HOST))
+    s = ok(s, user({ type: 'VOTE', value: '8' }, U1))
+    s = ok(s, user({ type: 'REVEAL' }, HOST))
+    s = ok(s, user({ type: 'FINISH_ROUND', finalScore: '5' }, HOST, NOW + 20))
+    expect(s.chat.at(-1)).toMatchObject({
+      userId: HOST,
+      name: 'Ana',
+      text: 'cerró la ronda 1 «HU-1 Login» con 5',
+      at: NOW + 20,
+      system: 'roundFinished',
+    })
+    s = ok(s, user({ type: 'VOTE', value: '3' }, U1))
+    s = ok(s, user({ type: 'REVEAL' }, HOST))
+    s = ok(s, user({ type: 'FINISH_ROUND', finalScore: '3' }, HOST))
+    expect(s.chat.at(-1)?.text).toBe('cerró la ronda 2 con 3')
+  })
+
   it('una desconexión quiet (el host recargó) no deja aviso', () => {
     const s = ok(table(), { type: 'DISCONNECT', userId: U1, quiet: true, at: NOW + 10 })
     expect(s.participants.find((p) => p.id === U1)?.connected).toBe(false)
