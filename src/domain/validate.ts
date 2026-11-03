@@ -6,6 +6,7 @@
  */
 import type { DomainEvent, TableState } from '@/domain/types'
 import { isAvatarStyleId } from '@/domain/avatars'
+import { isReactionEmoji } from '@/domain/emoji'
 import { isDeckId } from '@/domain/deck'
 import { isValidUserId } from '@/domain/table'
 
@@ -30,7 +31,7 @@ function isParticipant(x: unknown): boolean {
     isStr(x.name) &&
     isTimestamp(x.joinedAt) &&
     typeof x.connected === 'boolean' &&
-    (reaction == null || (isObj(reaction) && isStr(reaction.emoji) && isTimestamp(reaction.at)))
+    (reaction == null || (isObj(reaction) && isReactionEmoji(reaction.emoji) && isTimestamp(reaction.at)))
   )
 }
 

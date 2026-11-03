@@ -41,7 +41,7 @@ export const REACTION_TTL_MS = 4000
 /** Gracia tras una desconexión antes de retirar al participante de la mesa (ms). */
 export const DISCONNECT_GRACE_MS = 20_000
 
-/** Emojis permitidos como reacción. */
+/** Reacciones fijas de la barra. Se puede reaccionar con cualquier emoji (ver domain/emoji.ts). */
 export const REACTION_EMOJIS = ['👍', '👎', '🎉', '😂', '🤔', '❤️', '🔥', '👏', '😮', '☕'] as const
 export type ReactionEmoji = (typeof REACTION_EMOJIS)[number]
 
@@ -191,7 +191,7 @@ export type Command =
   | { type: 'GRANT_ADMIN'; userId: UserId } // admin
   | { type: 'REVOKE_ADMIN'; userId: UserId } // admin; no al host
   | { type: 'CHAT'; text: string }
-  | { type: 'REACT'; emoji: string } // debe estar en REACTION_EMOJIS
+  | { type: 'REACT'; emoji: string } // un único emoji (isReactionEmoji)
   | { type: 'CLOSE_TABLE' } // solo host
 
 /** Comandos que solo genera el host a partir de eventos de conexión. */

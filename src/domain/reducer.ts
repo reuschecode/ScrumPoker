@@ -1,7 +1,7 @@
+import { isReactionEmoji } from '@/domain/emoji'
 import { isAvatarStyleId, resolveAvatarStyle } from '@/domain/avatars'
 import {
   LIMITS,
-  REACTION_EMOJIS,
   type Action,
   type ChatMessage,
   type DomainError,
@@ -510,7 +510,7 @@ function chat(state: TableState, action: UserActionOf<'CHAT'>, actor: Participan
 
 function react(state: TableState, action: UserActionOf<'REACT'>): ReduceResult {
   const emoji = str(action.emoji)
-  if (!(REACTION_EMOJIS as readonly string[]).includes(emoji)) return reject(state, 'invalid-emoji')
+  if (!isReactionEmoji(emoji)) return reject(state, 'invalid-emoji')
   const participants = patchParticipant(state, action.by, { reaction: { emoji, at: action.at } })
   return apply(state, { participants }, [{ type: 'reaction', userId: action.by, emoji }])
 }

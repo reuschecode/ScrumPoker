@@ -918,8 +918,10 @@ describe('REACT', () => {
     expect(later.participants[2].reaction).toEqual({ emoji: '🎉', at: NOW + 9 })
   })
 
-  it('rechaza emojis fuera de la lista', () => {
-    fails(table(), user({ type: 'REACT', emoji: '🦄' }, U1), 'invalid-emoji')
+  it('acepta cualquier emoji único y rechaza el resto', () => {
+    ok(table(), user({ type: 'REACT', emoji: '🦄' }, U1))
+    fails(table(), user({ type: 'REACT', emoji: 'hola' }, U1), 'invalid-emoji')
+    fails(table(), user({ type: 'REACT', emoji: '👍👍' }, U1), 'invalid-emoji')
     fails(table(), user({ type: 'REACT', emoji: '' }, U1), 'invalid-emoji')
     fails(table(), user({ type: 'REACT', emoji: 1 as never }, U1), 'invalid-emoji')
     for (const emoji of REACTION_EMOJIS) ok(table(), user({ type: 'REACT', emoji }, U1))
